@@ -9,6 +9,14 @@ import { dataSource, encoding, spacing } from '../utils/constants';
 
 const filePath = `${process.cwd()}/${dataSource}`;
 
+/**
+ * Returns Todo List based on params
+ * 
+ * @param count 
+ * @param skip 
+ * @param search 
+ * @returns Object
+ */
 export const getTodoList = (count: number, skip: number, search: string) => {
   return new Promise<TodoListType>((resolve, reject) => {
     try {
@@ -17,12 +25,14 @@ export const getTodoList = (count: number, skip: number, search: string) => {
       let searchFilter = data;
       const sliceEnd = skip + count;
 
+      // Filter the items based on search
       if (search) {
         searchFilter = data.filter(
           (item: TodoType) => item.title.toLowerCase().includes(search.toLowerCase()),
         );
       }
 
+      // Get the target filter items
       const sliceData = searchFilter.slice(skip, sliceEnd);
 
       resolve({
@@ -43,14 +53,21 @@ export const getTodoList = (count: number, skip: number, search: string) => {
       });
     }
   });
-}
+};
 
+/**
+ * Add new todo item
+ * 
+ * @param bodyData 
+ * @returns Object
+ */
 export const addTodo = (bodyData: TodoAddType) => {
   return new Promise<TodoType>((resolve, reject) => {
     try {
       const jsonData = fs.readFileSync(filePath, encoding).toString();
       const data = JSON.parse(jsonData);
-    
+      
+      // Find last item to get id for new todo item
       const lastItem = data[data.length-1];
       const { id: lastId } = lastItem;
 
@@ -79,22 +96,31 @@ export const addTodo = (bodyData: TodoAddType) => {
   });
 };
 
-
+/**
+ * Update Existing Todo item
+ * 
+ * @param bodyData 
+ * @param id 
+ * @returns Object
+ */
 export const updateTodo = (bodyData: TodoAddType, id: number) => {
   return new Promise<TodoType>((resolve, reject) => {
     try {
       const jsonData = fs.readFileSync(filePath, encoding).toString();
       const data = JSON.parse(jsonData);
 
+      // Find target todo item
       const found = data.find((item: TodoType) => item.id  === id);
       const foundIndex = data.findIndex((item: TodoType) => item.id  === id);
 
       if (!(found && foundIndex)) {
         reject({
-          message: 'Document not found!',
+          message: 'Todo not found!',
           statusCode: 404,
         });
       }
+
+      // Updating values
       const updateItem = {
         id,
         ...bodyData,
@@ -122,7 +148,12 @@ export const updateTodo = (bodyData: TodoAddType, id: number) => {
   });
 };
 
-
+/**
+ * Remove Todo from the List
+ * 
+ * @param id 
+ * @returns Object
+ */
 export const deleteTodo = (id: number) => {
   return new Promise<ToDoDeleteType>((resolve, reject) => {
     try {
@@ -149,4 +180,42 @@ export const deleteTodo = (id: number) => {
       });
     }
   });
-}
+};
+
+/**
+ * Returns Todo by id
+ * 
+ * @param id 
+ * @returns Object
+ */
+export const getTodoById = (id: number) => {
+  return new Promise<TodoType>((resolve, reject) => {
+    try {
+      const jsonData = fs.readFileSync(filePath, encoding).toString();
+      const data = JSON.parse(jsonData);
+      const item = data.find((item: TodoType) => item.id === id);
+
+      if (!item) {
+        reject({
+          message: 'Todo not found!',
+          statusCode: 404,
+        });
+      }
+
+      resolve(item);
+      
+    } catch (error) {
+      let reason = '';
+
+      if (error instanceof Error) {
+        reason = error.message;
+      }
+
+      reject({
+        message: `Error in writing data due to ${reason}`,
+        statusCode: 500,
+      });
+    }
+  });
+};
+
